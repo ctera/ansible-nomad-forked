@@ -154,6 +154,21 @@
 - name: Host volume
   include: host_volume.yml
 
+- name: Ensure Nomad dirs ownership
+  file:
+    path: "{{ item }}"
+    owner: "{{ nomad_chown_owner }}"
+    group: "{{ nomad_chown_group }}"
+    recurse: yes
+  loop:
+    - "{{ nomad_config_dir }}"
+    - "{{ nomad_data_dir }}"
+  when:
+    - nomad_chown_owner is defined
+    - nomad_chown_group is defined
+  notify:
+    - restart nomad
+
 - name: SYSV init script
   template:
     src: nomad_sysvinit.j2
@@ -197,6 +212,10 @@
         mode: 0644
       register: nomad_systemd_file
     - block:
+      - name: Stop nomad before systemd reload
+        systemd:
+          name: nomad
+          state: stopped
       - name: reload systemd daemon
         systemd:
           daemon_reload: true
@@ -206,6 +225,17 @@
           enabled: yes
       when: nomad_systemd_file.changed
   when: ansible_service_mgr == "systemd"
+
+- name: Apply pending handlers before continuing
+  meta: flush_handlers
+
+- name: Ensure nomad started after unit changes
+  systemd:
+    name: nomad
+    state: started
+  when:
+    - ansible_service_mgr == "systemd"
+    - nomad_systemd_file.changed | default(false)
 
 - name: Start Nomad
   service:
