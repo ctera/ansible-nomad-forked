@@ -212,13 +212,13 @@
         mode: 0644
       register: nomad_systemd_file
     - block:
-      - name: Stop nomad before systemd reload
+      - name: Reload systemd daemon after unit file change
+        systemd:
+          daemon_reload: true
+      - name: Stop nomad before restart
         systemd:
           name: nomad
           state: stopped
-      - name: reload systemd daemon
-        systemd:
-          daemon_reload: true
       - name: Enable nomad at startup (systemd)
         systemd:
           name: nomad
