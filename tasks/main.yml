@@ -14,7 +14,7 @@
   setup:
   delegate_to: "{{ item }}"
   delegate_facts: true
-  with_items: "{{ nomad_servers | difference(play_hosts) }}"
+  loop: "{{ nomad_servers | difference(play_hosts) }}"
   ignore_errors: true
   when: nomad_gather_server_facts | bool
 
@@ -44,7 +44,7 @@
     state: directory
     owner: "{{ nomad_user }}"
     group: "{{ nomad_group }}"
-  with_items:
+  loop:
     - "{{ nomad_data_dir }}"
     - "{{ nomad_plugin_dir }}"
 
